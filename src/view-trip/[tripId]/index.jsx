@@ -5,6 +5,7 @@ import { db } from "@/sevice/firebaseConfig";
 import InfoSection from "../components/InfoSection";
 import { Hotel } from "lucide-react";
 import Hotels from "../components/Hotels";
+import PlacesToVisit from "../components/PlacesToVisit";
 
 function ViewTrip() {
   const { tripId } = useParams();
@@ -52,7 +53,7 @@ function ViewTrip() {
         {/* Recomeended Hotess */}
         <Hotels trip={trips}/>
         {/*Daily Plan*/}
-
+        <PlacesToVisit trip = {trips}/>
         {/*Footer*/}
     </div>
   );
