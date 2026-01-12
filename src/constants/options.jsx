@@ -53,5 +53,91 @@ export const SelectBudgetOptions = [
   },
 ];
 
-export const AI_PROMPT = 'Generate Travel Plan for Location :{location},for {totalDays} Days for {traveler} with a {budget} budget, give me Hotels options list with HotelName,Hotel address, Price, hotel image url, geo coordinates, rating, descriptions and suggest itinerary with placeName, Place Details, Place Image Url, Geo Coordinates, ticket Pricing, Time travel each of the location for {totalDays} days with each day plan with best time to visit in JSON format.'
+export const AI_PROMPT = `
+You are an API, not a chatbot.
+
+Return ONLY valid JSON.
+DO NOT include explanations, markdown, comments, or extra text.
+DO NOT change key names.
+DO NOT omit any fields.
+DO NOT add new fields.
+DO NOT wrap the response in backticks.
+
+Use EXACTLY this JSON schema:
+
+{
+  "itinerary": [
+    {
+      "day": number,
+      "bestTimeToVisitThisDay": string,
+      "activities": {
+        "morning": {
+          "placeName": string,
+          "placeDetails": string,
+          "placeImageQuery": string,
+          "geoCoordinates": {
+            "latitude": string,
+            "longitude": string
+          },
+          "timeToTravel": string,
+          "ticketPricing": string
+        },
+        "afternoon": {
+          "placeName": string,
+          "placeDetails": string,
+          "placeImageQuery": string,
+          "geoCoordinates": {
+            "latitude": string,
+            "longitude": string
+          },
+          "timeToTravel": string,
+          "ticketPricing": string
+        },
+        "evening": {
+          "placeName": string,
+          "placeDetails": string,
+          "placeImageQuery": string,
+          "geoCoordinates": {
+            "latitude": string,
+            "longitude": string
+          },
+          "timeToTravel": string,
+          "ticketPricing": string
+        }
+      }
+    }
+  ],
+  "hotelsOptions": [
+    {
+      "hotelName": string,
+      "hotelAddress": string,
+      "pricePerNightRange": string,
+      "rating": string,
+      "hotelImageQuery": string,
+      "geoCoordinates": {
+        "latitude": string,
+        "longitude": string
+      },
+      "description": string
+    }
+  ]
+}
+
+Context:
+Location: {location}
+Total Days: {totalDays}
+Travelers: {traveler}
+Budget: {budget}
+
+Rules:
+- itinerary.length MUST equal {totalDays}
+- Each day MUST contain morning, afternoon, and evening
+- Use realistic places for the given location
+- geoCoordinates must be approximate but valid
+- Use image SEARCH QUERIES, NOT image URLs
+- Prices must match the given budget
+
+Return JSON ONLY.
+`;
+
 

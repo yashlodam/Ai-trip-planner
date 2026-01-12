@@ -1,7 +1,52 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "../ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { googleLogout, useGoogleLogin } from "@react-oauth/google";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { FcGoogle } from "react-icons/fc";
+import axios from "axios";
 
 function Header() {
+
+  const users = JSON.parse(localStorage.getItem('user'));
+  const [openDialog, setOpenDialog] = useState(false);
+
+    const login = useGoogleLogin({
+      onSuccess: (tokenResponse) => {
+        getUserProfile(tokenResponse);
+      },
+      onError: (error) => {
+        console.log(error);
+      },
+    });
+  
+    const getUserProfile = async (tokenInfo) => {
+      const res = await axios.get(
+        "https://www.googleapis.com/oauth2/v1/userinfo",
+        {
+          headers: {
+            Authorization: `Bearer ${tokenInfo.access_token}`,
+            Accept: "application/json",
+          },
+        }
+      );
+  
+      localStorage.setItem("user", JSON.stringify(res.data));
+      setOpenDialog(false);
+      window.location.reload();
+    };
+
+  
   return (
     <div className="p-3 shadow-sm flex justify-between items-center px-5">
       <svg
@@ -69,8 +114,43 @@ function Header() {
         </text>
       </svg>
       <div>
-        <Button className="cursor-pointer">Sign In</Button>
+        {
+          users ? 
+          <div className="flex items-center gap-3">
+            <a href="/my-trips">
+            <Button variant="outline" className="rounded-full cursor-pointer">My Trips</Button>
+            </a>
+
+
+            <Popover>
+                <PopoverTrigger><img src={users?.picture} alt="" className="h-[35px] w-[35px] rounded-full cursor-pointer"/></PopoverTrigger>
+                <PopoverContent>
+                  <h2 onClick={()=>{
+                    googleLogout();
+                    localStorage.clear();
+                    window.location.reload();
+                  }} className="cursor-pointer">Log Out</h2>
+                </PopoverContent>
+              </Popover>
+          </div>
+          : <Button onClick={()=> setOpenDialog(!openDialog)} className="cursor-pointer">Sign In</Button>
+        }
       </div>
+       <Dialog open={openDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign In With Google</DialogTitle>
+            <DialogDescription>
+              Login to generate and save your trip
+            </DialogDescription>
+          </DialogHeader>
+
+          <Button onClick={login} className="w-full flex gap-3 mt-4">
+            <FcGoogle className="h-6 w-6" />
+            Continue with Google
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

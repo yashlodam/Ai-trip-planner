@@ -1,19 +1,42 @@
 import { Button } from "@/components/ui/button";
-import React from "react";
+import { GetPlaceDetails, PHOTO_REF_URL } from "@/sevice/GlobalApi";
+import React, { useEffect, useState } from "react";
 import { IoIosSend } from "react-icons/io";
+
+
 
 function InfoSection({ trip }) {
   // Safety check
   if (!trip || trip.length === 0) return null;
 
+  const [photoUrl,setPhotoUrl] = useState()
+
   const { destination, days, budget, travelers } = trip[0].userSelection;
 
+  useEffect(()=>{
+    trip&&GetPlacePhoto();
+  },[trip]);
+
+  const GetPlacePhoto = async ()=>{
+
+    const data = {
+      textQuery: destination
+    }
+
+    const result = await GetPlaceDetails(data)
+    .then(resp=>{
+        console.log(resp.data.places[0].photos[6].name);
+
+        const PhotoUrl = PHOTO_REF_URL.replace('{NAME}',resp.data.places[0].photos[3].name)
+        setPhotoUrl(PhotoUrl);
+        console.log(PhotoUrl);
+    })
+  }
   return (
     <section className="bg-white rounded-2xl shadow-lg overflow-hidden">
       {/* Cover Image */}
       <div className="relative">
-        <iframe width="100%" height="315" src="https://www.youtube.com/embed/LK5FJVCHXkU?si=JtfNW0HR7alBDecx" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
+        <img src={photoUrl} alt="" className="w-full h-[340px] object-cover rounded-xl"/>
         {/* Floating Action Button */}
         <Button
           size="icon"

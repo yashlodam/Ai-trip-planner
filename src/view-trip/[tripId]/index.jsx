@@ -6,6 +6,7 @@ import InfoSection from "../components/InfoSection";
 import { Hotel } from "lucide-react";
 import Hotels from "../components/Hotels";
 import PlacesToVisit from "../components/PlacesToVisit";
+import Footer from "../components/Footer";
 
 function ViewTrip() {
   const { tripId } = useParams();
@@ -55,6 +56,7 @@ function ViewTrip() {
         {/*Daily Plan*/}
         <PlacesToVisit trip = {trips}/>
         {/*Footer*/}
+        <Footer tirp={trips}/>
     </div>
   );
 }

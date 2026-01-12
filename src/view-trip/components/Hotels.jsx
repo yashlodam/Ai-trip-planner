@@ -1,8 +1,10 @@
 import React from "react";
+import HotelCardItem from "./HotelCardItem";
 
 function Hotels({ trip }) {
   if (!trip || trip.length === 0) return null;
 
+  // ✅ MATCHES STEP-2 GEMINI SCHEMA
   const hotels = trip[0]?.tripData?.hotelsOptions || [];
 
   const openInMaps = (hotel) => {
@@ -11,9 +13,16 @@ function Hotels({ trip }) {
     );
 
     const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
-
     window.open(url, "_blank");
   };
+
+  if (hotels.length === 0) {
+    return (
+      <p className="text-gray-500 mt-6">
+        No hotel recommendations available.
+      </p>
+    );
+  }
 
   return (
     <section className="mt-10">
@@ -21,39 +30,7 @@ function Hotels({ trip }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {hotels.map((hotel, index) => (
-          <div
-            key={index}
-            onClick={() => openInMaps(hotel)} // ✅ CLICK HANDLER
-            className="bg-white rounded-xl shadow-md hover:shadow-xl transition overflow-hidden cursor-pointer hover:scale-[1.02]"
-          >
-            {/* Hotel Image */}
-            <img
-              className="h-48 w-full object-cover"
-              src={`https://source.unsplash.com/600x400/?hotel,${hotel.hotelName}`}
-              alt={hotel.hotelName}
-            />
-
-            {/* Content */}
-            <div className="p-4 space-y-2">
-              <h3 className="font-semibold text-lg text-gray-800">
-                🏨 {hotel.hotelName}
-              </h3>
-
-              <p className="text-sm text-gray-500">
-                📍 {hotel.hotelAddress || "Near city center"}
-              </p>
-
-              <div className="flex justify-between items-center text-sm mt-2">
-                <span className="bg-green-50 text-green-600 px-3 py-1 rounded-full">
-                  💰 {hotel.pricePerNightRange || "Mid Range"}
-                </span>
-
-                <span className="bg-yellow-50 text-yellow-600 px-3 py-1 rounded-full">
-                  ⭐ {hotel.rating || "4.2"}
-                </span>
-              </div>
-            </div>
-          </div>
+          <HotelCardItem hotel={hotel} index={index}/>
         ))}
       </div>
     </section>
