@@ -42,207 +42,218 @@ function CreateTrip() {
     Number(days) > 0 &&
     Number(days) <= 50;
 
-  // Days validation
   useEffect(() => {
-    if (days > 50) {
-      toast.error("Please enter less than 50 days");
-    }
+    if (days > 50) toast.error("Please enter less than 50 days");
   }, [days]);
 
-  // 🔹 MAIN FUNCTION
+  /* -------------------- MAIN ACTION -------------------- */
   const handleGenerateTrip = async () => {
-  if (!isFormValid) {
-    toast.error("Please fill all details correctly");
-    return;
-  }
+    if (!isFormValid) {
+      toast.error("Please fill all details correctly");
+      return;
+    }
 
-  const user = localStorage.getItem("user");
-  if (!user) {
-    setOpenDialog(true);
-    return;
-  }
+    const user = localStorage.getItem("user");
+    if (!user) {
+      setOpenDialog(true);
+      return;
+    }
 
-  const userSelection = {
-    destination: place.formatted_address,
-    days: Number(days),
-    budget,
-    travelers,
+    const userSelection = {
+      destination: place.formatted_address,
+      days: Number(days),
+      budget,
+      travelers,
+    };
+
+    try {
+      setLoading(true);
+
+      const FINAL_PROMPT = AI_PROMPT.replace(
+        "{location}",
+        userSelection.destination
+      )
+        .replace("{totalDays}", userSelection.days)
+        .replace("{traveler}", userSelection.travelers)
+        .replace("{budget}", userSelection.budget);
+
+      const tripResult = await generateTrip(FINAL_PROMPT);
+
+      setLoading(false);
+      saveTripToFirebase(userSelection, tripResult);
+
+      toast.success("Trip generated successfully 🎉");
+    } catch (error) {
+      setLoading(false);
+      toast.error("Failed to generate trip");
+    }
   };
 
-  try {
-    setLoading(true);
+  /* -------------------- GOOGLE LOGIN -------------------- */
+  const login = useGoogleLogin({
+    onSuccess: (tokenResponse) => getUserProfile(tokenResponse),
+    onError: (error) => console.log(error),
+  });
 
-    const FINAL_PROMPT = AI_PROMPT.replace(
-      "{location}",
-      userSelection.destination
-    )
-      .replace("{totalDays}", userSelection.days)
-      .replace("{traveler}", userSelection.travelers)
-      .replace("{budget}", userSelection.budget);
+const getUserProfile = async (tokenInfo) => {
+  const res = await axios.get(
+    "https://www.googleapis.com/oauth2/v1/userinfo",
+    {
+      headers: {
+        Authorization: `Bearer ${tokenInfo.access_token}`,
+        Accept: "application/json",
+      },
+    }
+  );
 
-    // ⏳ SLOW PART (AI)
-    const tripResult = await generateTrip(FINAL_PROMPT);
+  localStorage.setItem("user", JSON.stringify(res.data));
 
-    // ✅ STOP LOADING IMMEDIATELY
-    setLoading(false);
+  // 🔔 Notify navbar to update
+  window.dispatchEvent(new Event("user-login"));
 
-    // 🔥 SAVE IN BACKGROUND (DON'T AWAIT)
-    saveTripToFirebase(userSelection, tripResult);
-
-    toast.success("Trip generated successfully 🎉");
-    
-  } catch (error) {
-    setLoading(false);
-    toast.error("Failed to generate trip");
-  }
+  setOpenDialog(false);
+  handleGenerateTrip();
 };
 
 
-  // 🔹 GOOGLE LOGIN
-  const login = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      getUserProfile(tokenResponse);
-    },
-    onError: (error) => {
-      console.log(error);
-    },
-  });
-
-  const getUserProfile = async (tokenInfo) => {
-    const res = await axios.get(
-      "https://www.googleapis.com/oauth2/v1/userinfo",
-      {
-        headers: {
-          Authorization: `Bearer ${tokenInfo.access_token}`,
-          Accept: "application/json",
-        },
-      }
-    );
-
-    localStorage.setItem("user", JSON.stringify(res.data));
-    setOpenDialog(false);
-    handleGenerateTrip();
-  };
-
-  // 🔹 FIREBASE SAVE (NO NULL)
+  /* -------------------- FIREBASE -------------------- */
   const saveTripToFirebase = async (userSelection, tripData) => {
     const user = JSON.parse(localStorage.getItem("user"));
 
-   const docRef =  await addDoc(collection(db, "trips"), {
-      userSelection,        // ✅ NOT NULL
-      tripData,             // ✅ NOT NULL
+    const docRef = await addDoc(collection(db, "trips"), {
+      userSelection,
+      tripData,
       userEmail: user?.email || null,
       createdAt: new Date(),
     });
-    navigate('/view-trip/'+docRef.id)
+
+    navigate("/view-trip/" + docRef.id);
   };
 
   return (
-    <section className="px-5 sm:px-10 md:px-24 lg:px-40 xl:px-56 mt-12 mb-20">
-      <h2 className="font-bold text-3xl text-gray-900">
-        Tell us your travel preferences
-      </h2>
-      <p className="mt-4 text-gray-500 text-lg max-w-3xl">
-        Just provide some basic information and our AI trip planner will generate
-        a customized itinerary based on your preferences.
-      </p>
+    <section className="relative overflow-hidden bg-gradient-to-b from-white to-orange-50">
 
-      <div className="mt-16 max-w-3xl space-y-14">
-        {/* Destination */}
-        <div>
-          <h3 className="text-xl font-semibold mb-3">🌍 Destination</h3>
-          <ReactGoogleAutocomplete
-            apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
-            placeholder="Search city, place, or country"
-            onPlaceSelected={setPlace}
-            options={{ types: ["(cities)"] }}
-            className="w-full px-4 py-3 rounded-xl border"
-          />
+      {/* Background glow */}
+      <div className="absolute -top-32 -left-32 h-96 w-96 bg-orange-400/20 rounded-full blur-3xl" />
+      <div className="absolute top-52 -right-32 h-96 w-96 bg-pink-400/20 rounded-full blur-3xl" />
+
+      <div className="relative px-5 sm:px-10 md:px-24 lg:px-40 xl:px-56 mt-16 mb-24">
+
+        {/* HEADER */}
+        <div className="max-w-4xl mb-16">
+          <span className="inline-block mb-4 px-4 py-1 rounded-full bg-orange-100 text-orange-600 text-sm font-semibold">
+            Trip Preferences
+          </span>
+          <h2 className="font-extrabold text-3xl md:text-4xl text-gray-900">
+            Tell us about your trip
+          </h2>
+          <p className="mt-4 text-gray-600 text-lg">
+            Just provide a few details and our AI will create a personalized
+            travel itinerary tailored to your preferences.
+          </p>
         </div>
 
-        {/* Days */}
-        <div>
-          <h3 className="text-xl font-semibold mb-3">
-            📅 Trip Duration (Days)
-          </h3>
-          <Input
-            type="number"
-            min={1}
-            placeholder="Ex. 3"
-            value={days}
-            onChange={(e) => setDays(e.target.value)}
-            className="max-w-xs"
-          />
-        </div>
+        {/* FORM */}
+        <div className="max-w-4xl space-y-16">
 
-        {/* Budget */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">💰 Budget</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            {SelectBudgetOptions.map((item, index) => (
-              <div
-                key={index}
-                onClick={() => setBudget(item.title)}
-                className={clsx(
-                  "p-5 border rounded-xl cursor-pointer",
-                  budget === item.title &&
-                    "border-blue-600 bg-blue-50 shadow-md"
-                )}
-              >
-                <div className="text-4xl">{item.icon}</div>
-                <h4 className="font-bold text-lg mt-2">{item.title}</h4>
-                <p className="text-sm text-gray-500">{item.desc}</p>
-              </div>
-            ))}
+          {/* DESTINATION */}
+          <div>
+            <h3 className="text-xl font-semibold mb-3">🌍 Destination</h3>
+            <ReactGoogleAutocomplete
+              apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
+              placeholder="Search city, place, or country"
+              onPlaceSelected={setPlace}
+              options={{ types: ["(cities)"] }}
+              className="w-full px-5 py-4 rounded-xl border shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            />
           </div>
-        </div>
 
-        {/* Travelers */}
-        <div>
-          <h3 className="text-xl font-semibold mb-4">🧑‍🤝‍🧑 Travelers</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            {SelectTravelersList.map((item, index) => (
-              <div
-                key={index}
-                onClick={() => setTravelers(item.title)}
-                className={clsx(
-                  "p-5 border rounded-xl cursor-pointer",
-                  travelers === item.title &&
-                    "border-blue-600 bg-blue-50 shadow-md"
-                )}
-              >
-                <div className="text-4xl">{item.icon}</div>
-                <h4 className="font-bold text-lg mt-2">{item.title}</h4>
-                <p className="text-sm text-gray-500">{item.desc}</p>
-              </div>
-            ))}
+          {/* DAYS */}
+          <div>
+            <h3 className="text-xl font-semibold mb-3">
+              📅 Trip Duration
+            </h3>
+            <Input
+              type="number"
+              min={1}
+              placeholder="Number of days"
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+              className="max-w-xs rounded-xl py-4"
+            />
           </div>
-        </div>
 
-        {/* Button */}
-        <Button
-          disabled={!isFormValid || loading}
-          onClick={handleGenerateTrip}
-          className="px-10 py-6 text-lg rounded-xl"
-        >
-          {loading ? (
-            <>
-              <AiOutlineLoading3Quarters className="animate-spin mr-2" />
-              Generating...
-            </>
-          ) : (
-            "Generate Trip ✨"
-          )}
-        </Button>
+          {/* BUDGET */}
+          <div>
+            <h3 className="text-xl font-semibold mb-5">💰 Budget</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {SelectBudgetOptions.map((item, index) => (
+                <div
+                  key={index}
+                  onClick={() => setBudget(item.title)}
+                  className={clsx(
+                    "p-6 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg",
+                    budget === item.title
+                      ? "border-orange-500 bg-orange-50 shadow-lg"
+                      : "bg-white"
+                  )}
+                >
+                  <div className="text-4xl">{item.icon}</div>
+                  <h4 className="font-bold text-lg mt-3">{item.title}</h4>
+                  <p className="text-sm text-gray-500">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* TRAVELERS */}
+          <div>
+            <h3 className="text-xl font-semibold mb-5">🧑‍🤝‍🧑 Travelers</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {SelectTravelersList.map((item, index) => (
+                <div
+                  key={index}
+                  onClick={() => setTravelers(item.title)}
+                  className={clsx(
+                    "p-6 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg",
+                    travelers === item.title
+                      ? "border-orange-500 bg-orange-50 shadow-lg"
+                      : "bg-white"
+                  )}
+                >
+                  <div className="text-4xl">{item.icon}</div>
+                  <h4 className="font-bold text-lg mt-3">{item.title}</h4>
+                  <p className="text-sm text-gray-500">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* SUBMIT */}
+          <Button
+            disabled={!isFormValid || loading}
+            onClick={handleGenerateTrip}
+            className="px-12 py-6 text-lg rounded-xl shadow-lg hover:scale-105 transition-transform cursor-pointer"
+          >
+            {loading ? (
+              <>
+                <AiOutlineLoading3Quarters className="animate-spin mr-2" />
+                Generating Trip...
+              </>
+            ) : (
+              "Generate Trip ✨"
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* LOGIN DIALOG */}
       <Dialog open={openDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Sign In With Google</DialogTitle>
+            <DialogTitle>Sign in to continue</DialogTitle>
             <DialogDescription>
-              Login to generate and save your trip
+              Login with Google to generate and save your trip.
             </DialogDescription>
           </DialogHeader>
 

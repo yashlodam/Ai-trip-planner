@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Button } from "../ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 import { googleLogout, useGoogleLogin } from "@react-oauth/google";
 import {
   Dialog,
@@ -15,143 +15,170 @@ import {
 } from "@/components/ui/dialog";
 import { FcGoogle } from "react-icons/fc";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function Header() {
-
-  const users = JSON.parse(localStorage.getItem('user'));
+  const users = JSON.parse(localStorage.getItem("user"));
   const [openDialog, setOpenDialog] = useState(false);
+  
 
-    const login = useGoogleLogin({
-      onSuccess: (tokenResponse) => {
-        getUserProfile(tokenResponse);
-      },
-      onError: (error) => {
-        console.log(error);
-      },
-    });
-  
-    const getUserProfile = async (tokenInfo) => {
-      const res = await axios.get(
-        "https://www.googleapis.com/oauth2/v1/userinfo",
-        {
-          headers: {
-            Authorization: `Bearer ${tokenInfo.access_token}`,
-            Accept: "application/json",
-          },
-        }
-      );
-  
-      localStorage.setItem("user", JSON.stringify(res.data));
-      setOpenDialog(false);
-      window.location.reload();
-    };
+  const login = useGoogleLogin({
+    onSuccess: (tokenResponse) => {
+      getUserProfile(tokenResponse);
+    },
+    onError: (error) => {
+      console.log(error);
+    },
+  });
 
-  
+  const getUserProfile = async (tokenInfo) => {
+    const res = await axios.get(
+      "https://www.googleapis.com/oauth2/v1/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${tokenInfo.access_token}`,
+          Accept: "application/json",
+        },
+      }
+    );
+
+    localStorage.setItem("user", JSON.stringify(res.data));
+    setOpenDialog(false);
+    window.location.reload();
+  };
+
   return (
-    <div className="p-3 shadow-sm flex justify-between items-center px-5">
-      <svg
-        width="300"
-        height="90"
-        viewBox="0 0 400 100"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <linearGradient id="auraGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#6366f1" />
-            <stop offset="100%" stop-color="#a855f7" />
-          </linearGradient>
-          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="2" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-        </defs>
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b">
+      <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
+        {/* LOGO */}
+        {/* LOGO */}
+        <div className="flex items-center gap-2 sm:gap-3 cursor-pointer">
+          <svg
+            className="w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11"
+            viewBox="0 0 100 100"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <defs>
+              <linearGradient
+                id="auraGradient"
+                x1="0%"
+                y1="0%"
+                x2="100%"
+                y2="100%"
+              >
+                <stop offset="0%" stopColor="#6366f1" />
+                <stop offset="100%" stopColor="#a855f7" />
+              </linearGradient>
+            </defs>
 
-        <circle
-          cx="50"
-          cy="50"
-          r="35"
-          fill="url(#auraGradient)"
-          fill-opacity="0.1"
-        />
-        <path
-          d="M50 25L65 65L50 58L35 65L50 25Z"
-          fill="url(#auraGradient)"
-          filter="url(#glow)"
-        />
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              fill="url(#auraGradient)"
+              opacity="0.15"
+            />
+            <path
+              d="M50 20L65 70L50 60L35 70L50 20Z"
+              fill="url(#auraGradient)"
+            />
+          </svg>
 
-        <circle cx="35" cy="40" r="2" fill="#6366f1" />
-        <circle cx="70" cy="50" r="2" fill="#a855f7" />
-        <circle cx="45" cy="75" r="2" fill="#6366f1" />
-        <path
-          d="M35 40Q50 30 70 50"
-          stroke="#6366f1"
-          stroke-width="0.5"
-          stroke-dasharray="2 2"
-        />
+          <div className="leading-tight">
+            <h1 className="text-base sm:text-lg md:text-xl font-extrabold text-gray-800">
+              Aura
+              <span className="text-purple-600 ml-1">Travel</span>
+            </h1>
 
-        <text
-          x="100"
-          y="55"
-          font-family="Arial, sans-serif"
-          font-weight="800"
-          font-size="32"
-          fill="#1f2937"
-        >
-          Aura<tspan fill="url(#auraGradient)">Travel</tspan>
-        </text>
+            {/* Hide subtitle on very small screens */}
+            <p className="hidden sm:block text-[10px] sm:text-xs tracking-widest text-gray-500">
+              AI TRIP PLANNER
+            </p>
+          </div>
+        </div>
 
-        <text
-          x="100"
-          y="75"
-          font-family="Arial, sans-serif"
-          font-weight="500"
-          font-size="12"
-          fill="#6b7280"
-          letter-spacing="2"
-        >
-          AI TRIP PLANNER
-        </text>
-      </svg>
-      <div>
-        {
-          users ? 
-          <div className="flex items-center gap-3">
-            <a href="/my-trips">
-            <Button variant="outline" className="rounded-full cursor-pointer">My Trips</Button>
-            </a>
+        {/* ACTIONS */}
+        <div className="flex items-center gap-4">
+          {users ? (
+            <>
+              <a href="/create-trip">
+                <Button
+                  variant="outline"
+                  className="rounded-full px-5 cursor-pointer"
+                >
+                  + Create Trips
+                </Button>
+              </a>
+              <a href="/my-trips">
+                <Button
+                  variant="outline"
+                  className="rounded-full px-5 cursor-pointer"
+                >
+                  My Trips
+                </Button>
+              </a>
 
+              <Popover>
+                <PopoverTrigger>
+                  <img
+                    src={users?.picture}
+                    alt="User"
+                    className="h-9 w-9 rounded-full border cursor-pointer hover:scale-105 transition"
+                  />
+                </PopoverTrigger>
 
-            <Popover>
-                <PopoverTrigger><img src={users?.picture} alt="" className="h-[35px] w-[35px] rounded-full cursor-pointer"/></PopoverTrigger>
-                <PopoverContent>
-                  <h2 onClick={()=>{
-                    googleLogout();
-                    localStorage.clear();
-                    window.location.reload();
-                  }} className="cursor-pointer">Log Out</h2>
+                <PopoverContent className="w-40 p-2">
+                  <button
+                    onClick={() => {
+                      googleLogout();
+                      localStorage.clear();
+                      window.location.reload();
+                      window.location.href = "/create-trip";
+
+                      
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-md text-sm 
+                               hover:bg-red-50 hover:text-red-600 transition"
+                  >
+                    Log Out
+                  </button>
                 </PopoverContent>
               </Popover>
-          </div>
-          : <Button onClick={()=> setOpenDialog(!openDialog)} className="cursor-pointer">Sign In</Button>
-        }
+            </>
+          ) : (
+            <Button
+              onClick={() => setOpenDialog(true)}
+              className="rounded-full px-6 cursor-pointer"
+            >
+              Sign In
+            </Button>
+          )}
+        </div>
       </div>
-       <Dialog open={openDialog}>
-        <DialogContent>
+
+      {/* SIGN IN DIALOG */}
+      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+        <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Sign In With Google</DialogTitle>
-            <DialogDescription>
-              Login to generate and save your trip
+            <DialogTitle className="text-xl font-bold">
+              Sign in to AuraTravel
+            </DialogTitle>
+            <DialogDescription className="text-gray-500">
+              Login to generate, save, and manage your trips.
             </DialogDescription>
           </DialogHeader>
 
-          <Button onClick={login} className="w-full flex gap-3 mt-4">
-            <FcGoogle className="h-6 w-6" />
+          <Button
+            onClick={login}
+            className="w-full flex gap-3 py-6 text-base font-semibold cursor-pointer"
+          >
+            <FcGoogle className="h-6 w-6 " />
             Continue with Google
           </Button>
         </DialogContent>
       </Dialog>
-    </div>
+    </header>
   );
 }
 
