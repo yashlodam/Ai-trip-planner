@@ -1,4 +1,4 @@
-import { GetPlaceDetails, PHOTO_REF_URL } from '@/sevice/GlobalApi';
+import { GetPlaceDetails } from '@/sevice/GlobalApi';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -6,30 +6,34 @@ function UserTripCardItems({ trip }) {
   const [photoUrl, setPhotoUrl] = useState("");
 
   useEffect(() => {
-    trip && GetPlacePhoto();
+    if (trip) {
+      GetPlacePhoto();
+    }
   }, [trip]);
 
   const GetPlacePhoto = async () => {
     try {
-      const data = {
+      const resp = await GetPlaceDetails({
         textQuery: trip?.userSelection?.destination,
-      };
+      });
 
-      const resp = await GetPlaceDetails(data);
-      const photoName = resp?.data?.places?.[0]?.photos?.[0]?.name;
+      const photoUrl = resp?.data?.places?.[0]?.photos?.[0]?.name;
 
-      if (photoName) {
-        const url = PHOTO_REF_URL.replace("{NAME}", photoName);
-        setPhotoUrl(url);
+      if (photoUrl) {
+        setPhotoUrl(photoUrl);
       }
     } catch (error) {
-      console.error("Error fetching hotel photo", error);
+      console.error("Error fetching trip photo", error);
     }
   };
 
   return (
-    <Link to={'/view-trip/' + trip.id}>
-      <div className="relative group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 overflow-hidden cursor-pointer">
+    <Link
+      to={`/view-trip/${trip.id}`}
+      className="cursor-pointer"
+      aria-label={`View trip to ${trip?.userSelection?.destination}`}
+    >
+      <div className="relative group bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-500 overflow-hidden">
 
         {/* Animated gradient background */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 
@@ -72,7 +76,6 @@ function UserTripCardItems({ trip }) {
           <div className="absolute -inset-[200%] bg-gradient-to-r from-transparent via-white/30 to-transparent 
                           rotate-12 animate-shimmer" />
         </div>
-
       </div>
     </Link>
   );

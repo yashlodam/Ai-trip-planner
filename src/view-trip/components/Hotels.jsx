@@ -30,7 +30,7 @@ function Hotels({ trip }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {hotels.map((hotel, index) => (
-          <HotelCardItem hotel={hotel} index={index}/>
+          <HotelCardItem key={index} hotel={hotel} index={index}/>
         ))}
       </div>
     </section>

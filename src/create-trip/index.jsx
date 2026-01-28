@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import ReactGoogleAutocomplete from "react-google-autocomplete";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +23,90 @@ import axios from "axios";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "@/sevice/firebaseConfig";
 import { useNavigate } from "react-router-dom";
+
+// NEW: LocationAutocomplete Component
+function LocationAutocomplete({ onPlaceSelected }) {
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`,
+          {
+            headers: {
+              'User-Agent': 'TripPlanner/1.0'
+            }
+          }
+        );
+        const data = await response.json();
+        setSuggestions(data);
+      } catch (error) {
+        console.error("Error fetching locations:", error);
+      }
+      setLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const handleSelect = (place) => {
+    setQuery(place.display_name);
+    onPlaceSelected({ formatted_address: place.display_name });
+    setShowSuggestions(false);
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        type="text"
+        placeholder="Search city, place, or country"
+        value={query}
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setShowSuggestions(true);
+        }}
+        onFocus={() => setShowSuggestions(true)}
+        className="w-full px-5 py-4 rounded-xl border shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+      />
+      
+      {loading && (
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <div className="animate-spin h-5 w-5 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+        </div>
+      )}
+      
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="absolute z-50 w-full mt-2 bg-white border rounded-xl shadow-lg max-h-60 overflow-y-auto">
+          {suggestions.map((place, index) => (
+            <div
+              key={index}
+              onClick={() => handleSelect(place)}
+              className="px-4 py-3 hover:bg-orange-50 cursor-pointer border-b last:border-b-0 transition-colors"
+            >
+              <p className="text-sm font-medium text-gray-900">{place.display_name}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {showSuggestions && query.length >= 3 && suggestions.length === 0 && !loading && (
+        <div className="absolute z-50 w-full mt-2 bg-white border rounded-xl shadow-lg p-4">
+          <p className="text-sm text-gray-500">No locations found</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function CreateTrip() {
   const [place, setPlace] = useState(null);
@@ -71,7 +154,7 @@ function CreateTrip() {
 
       const FINAL_PROMPT = AI_PROMPT.replace(
         "{location}",
-        userSelection.destination
+        userSelection.destination,
       )
         .replace("{totalDays}", userSelection.days)
         .replace("{traveler}", userSelection.travelers)
@@ -95,26 +178,25 @@ function CreateTrip() {
     onError: (error) => console.log(error),
   });
 
-const getUserProfile = async (tokenInfo) => {
-  const res = await axios.get(
-    "https://www.googleapis.com/oauth2/v1/userinfo",
-    {
-      headers: {
-        Authorization: `Bearer ${tokenInfo.access_token}`,
-        Accept: "application/json",
+  const getUserProfile = async (tokenInfo) => {
+    const res = await axios.get(
+      "https://www.googleapis.com/oauth2/v1/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${tokenInfo.access_token}`,
+          Accept: "application/json",
+        },
       },
-    }
-  );
+    );
 
-  localStorage.setItem("user", JSON.stringify(res.data));
+    localStorage.setItem("user", JSON.stringify(res.data));
 
-  // 🔔 Notify navbar to update
-  window.dispatchEvent(new Event("user-login"));
+    // 🔔 Notify navbar to update
+    window.dispatchEvent(new Event("user-login"));
 
-  setOpenDialog(false);
-  handleGenerateTrip();
-};
-
+    setOpenDialog(false);
+    handleGenerateTrip();
+  };
 
   /* -------------------- FIREBASE -------------------- */
   const saveTripToFirebase = async (userSelection, tripData) => {
@@ -132,13 +214,11 @@ const getUserProfile = async (tokenInfo) => {
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-b from-white to-orange-50">
-
       {/* Background glow */}
       <div className="absolute -top-32 -left-32 h-96 w-96 bg-orange-400/20 rounded-full blur-3xl" />
       <div className="absolute top-52 -right-32 h-96 w-96 bg-pink-400/20 rounded-full blur-3xl" />
 
       <div className="relative px-5 sm:px-10 md:px-24 lg:px-40 xl:px-56 mt-16 mb-24">
-
         {/* HEADER */}
         <div className="max-w-4xl mb-16">
           <span className="inline-block mb-4 px-4 py-1 rounded-full bg-orange-100 text-orange-600 text-sm font-semibold">
@@ -155,24 +235,15 @@ const getUserProfile = async (tokenInfo) => {
 
         {/* FORM */}
         <div className="max-w-4xl space-y-16">
-
-          {/* DESTINATION */}
+          {/* DESTINATION - ONLY CHANGED THIS SECTION */}
           <div>
             <h3 className="text-xl font-semibold mb-3">🌍 Destination</h3>
-            <ReactGoogleAutocomplete
-              apiKey={import.meta.env.VITE_GOOGLE_PLACE_API_KEY}
-              placeholder="Search city, place, or country"
-              onPlaceSelected={setPlace}
-              options={{ types: ["(cities)"] }}
-              className="w-full px-5 py-4 rounded-xl border shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-            />
+            <LocationAutocomplete onPlaceSelected={setPlace} />
           </div>
 
           {/* DAYS */}
           <div>
-            <h3 className="text-xl font-semibold mb-3">
-              📅 Trip Duration
-            </h3>
+            <h3 className="text-xl font-semibold mb-3">📅 Trip Duration</h3>
             <Input
               type="number"
               min={1}
@@ -195,7 +266,7 @@ const getUserProfile = async (tokenInfo) => {
                     "p-6 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg",
                     budget === item.title
                       ? "border-orange-500 bg-orange-50 shadow-lg"
-                      : "bg-white"
+                      : "bg-white",
                   )}
                 >
                   <div className="text-4xl">{item.icon}</div>
@@ -218,7 +289,7 @@ const getUserProfile = async (tokenInfo) => {
                     "p-6 rounded-2xl border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-lg",
                     travelers === item.title
                       ? "border-orange-500 bg-orange-50 shadow-lg"
-                      : "bg-white"
+                      : "bg-white",
                   )}
                 >
                   <div className="text-4xl">{item.icon}</div>
