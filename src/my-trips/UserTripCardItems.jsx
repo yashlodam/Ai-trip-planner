@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 function UserTripCardItems({ trip }) {
   const [photoUrl, setPhotoUrl] = useState("");
+  const[set isLoading] = useState(false);
 
   useEffect(() => {
     if (trip) {
